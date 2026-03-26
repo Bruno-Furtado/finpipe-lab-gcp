@@ -64,7 +64,7 @@ gsutil cp storage/files/normalized/customers.csv gs://finpipe-landing/entity=cus
 gsutil cp storage/files/normalized/transactions.csv gs://finpipe-landing/entity=transactions/year=2026/month=03/day=25/transactions.csv
 ```
 
-Cada upload finalizado dispara automaticamente o EventArc, que invoca a Cloud Run Function e inicia o fluxo.
+> Cada upload finalizado dispara automaticamente o EventArc, que invoca a Cloud Run Function e inicia o fluxo.
 
 
 ## 📄 Licença
