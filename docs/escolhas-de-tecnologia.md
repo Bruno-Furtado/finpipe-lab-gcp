@@ -24,4 +24,4 @@
 Três camadas com responsabilidades distintas:
 - **raw:** dados brutos exatamente como recebidos do Pub/Sub, imutáveis. Particionados por data para evitar full scan.
 - **silver:** dados limpos, normalizados e deduplicados. O MERGE incremental garante idempotência.
-- **gold** — tabela pronta para analytics, enriquecida com um join entre transações e clientes, com particionamento e clusterização.
+- **gold:** tabela pronta para analytics, enriquecida com um join entre transações e clientes, com particionamento e clusterização.
