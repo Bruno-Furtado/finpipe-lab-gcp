@@ -31,7 +31,7 @@ Pipeline orientado a eventos para ingestão, transformação e análise de trans
 6. **Silver** limpa, normaliza e deduplica os registros via MERGE incremental particionado
 7. **Gold** enriquece os dados com um join de transações ✕ clientes, particionado e clusterizado para otimização
 
-> Mais detalhes sobre [as escolhas de tecnologia](./docs/por-que-essas-tecnologias.md) e [observações sobre os dados](./docs/observacoes-sobre-os-dados.md).
+> Mais detalhes sobre as [escolhas de tecnologia](./docs/escolhas-de-tecnologia.md) e [observações sobre os dados](./docs/observacoes-sobre-os-dados.md).
 
 
 ## ⚙️ Pré-requisitos
@@ -65,6 +65,39 @@ gsutil cp storage/files/normalized/transactions.csv gs://finpipe-landing/entity=
 ```
 
 > Cada upload finalizado dispara automaticamente o EventArc, que invoca a Cloud Run Function e inicia o fluxo.
+
+
+## 💰 Estimativa de Custos
+
+Os valores abaixo são **simulações** baseadas em dois cenários de volume distintos.
+
+**Cenário 1 — 100 arquivos/dia · 5 MB/arquivo**
+
+| Serviço | Mês 1 | Mês 12 | 12 meses |
+|---------|-------|--------|----------|
+| Cloud Storage | ~$0,03 | ~$0,36 | ~$2,34 |
+| EventArc | — | — | — |
+| Cloud Run Function | — | — | — |
+| Pub/Sub | — | — | — |
+| Cloud Workflows | — | — | — |
+| BigQuery (armazenamento) | ~$0,10 | ~$3,40 | ~$21,00 |
+| BigQuery (processamento) | — | — | — |
+| **Total estimado** | **~$0,13** | **~$3,76** | **~$23,34** |
+
+**Cenário 2 — 100.000 arquivos/dia · 5 MB/arquivo**
+
+| Serviço | Mês 1 | Mês 12 | 12 meses |
+|---------|-------|--------|----------|
+| Cloud Storage | ~$30,00 | ~$360,00 | ~$2.340,00 |
+| EventArc | — | — | — |
+| Cloud Run Function | ~$0,40 | ~$0,40 | ~$4,80 |
+| Pub/Sub | — | — | — |
+| Cloud Workflows | ~$29,95 | ~$29,95 | ~$359,40 |
+| BigQuery (armazenamento) | ~$300,00 | ~$3.600,00 | ~$23.400,00 |
+| BigQuery (processamento) | ~$78,00 | ~$78,00 | ~$936,00 |
+| **Total estimado** | **~$408,35** | **~$4.068,35** | **~$27.040,20** |
+
+> O custo do Storage é alto pois não estamos considerando a mudança para clas Archive. Veja a [simulação detalhada](./docs/simulacao-de-custos.md).
 
 
 ## 📄 Licença

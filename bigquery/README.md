@@ -1,22 +1,20 @@
-# BigQuery
-
 Criação dos datasets (`raw`, `silver`, `gold`) e de todas as tabelas, funções e procedures do pipeline.
 
 
-## Como executar
+## 🚀 Implantação
 
 ```bash
 ./bigquery/deploy.sh
 ```
 
 
-## Camada RAW
+## 📥 Camada RAW
 
 Dados brutos ingeridos sem transformação. Serve como fonte de verdade: qualquer reprocessamento parte daqui.
 
 ### `raw.landing_events`
 
-Recebe os eventos do Pub/Sub via subscription nativa. Cada linha representa uma mensagem publicada pela Cloud Function ao detectar um novo arquivo no bucket.
+Recebe os eventos do Pub/Sub via subscription. Cada linha representa uma msg publicada pela Function ao detectar um arquivo no bucket.
 
 | Campo | Tipo | Descrição |
 |---|---|---|
@@ -27,15 +25,9 @@ Recebe os eventos do Pub/Sub via subscription nativa. Cada linha representa uma 
 | `attributes` | JSON | Metadados adicionais, incluindo o `audit_id` gerado pela Function |
 
 
-## Camada Silver
+## 🪙 Camada Silver
 
-Dados limpos e normalizados, particionados por `_ingested_at`. O MERGE incremental garante idempotência, reprocessar o mesmo arquivo não gera duplicatas.
-
-### Funções
-
-#### `silver.normalize_customer_id(id STRING)`
-
-Normaliza o `customer_id` removendo zeros à esquerda do número: `C01 → C1`, `D001 → D1`, `C10 → C10`. Necessária para garantir integridade do JOIN na camada gold (o mesmo cliente aparecia com formatos diferentes nos arquivos de entrada).
+Dados limpos e normalizados, particionados pela data da ingestão. O MERGE incremental garante idempotência.
 
 ### `silver.customers`
 
@@ -64,21 +56,25 @@ Normaliza o `customer_id` removendo zeros à esquerda do número: `C01 → C1`, 
 | `_processed_at` | TIMESTAMP | Timestamp de processamento |
 | `_metadata` | STRUCT | `audit_id`, `message_id`, `entity`, `source_file`, `source_path`, `publish_time` |
 
+### Funções
+
+- `silver.normalize_customer_id`: normaliza o id removendo zeros à esquerda do número: (D001 → D1).
+
 ### Procedures
 
-- `silver.proc_customers()` — lê `raw.landing_events` (entity=customers), deduplica por `source_path` e faz MERGE em `silver.customers`
-- `silver.proc_transactions()` — lê `raw.landing_events` (entity=transactions), deduplica por `source_path` e faz MERGE em `silver.transactions`
+- `silver.proc_customers()`: lê a tabela de eventos, deduplica e faz MERGE em na tabela silver
+- `silver.proc_transactions()`: lê a tabela de eventos, deduplica e faz MERGE em na tabela silver
 
-Ambas usam uma janela de lookback de 7 dias para evitar full scans em `raw.landing_events`, alinhada ao período de retenção da subscription do Pub/Sub.
+> Ambas usam uma janela de lookback de 7 dias para evitar full scans na tabela de eventos.
 
 
-## Camada Gold
+## 🥇 Camada Gold
 
-Tabela desnormalizada pronta para análise, particionada por `_ingested_at` e clusterizada por `transaction_status`, `transaction_type`, `customer_id`.
+Tabela pronta para análise, particionada pela data de ingestão e clusterizada.
 
 ### `gold.transactions`
 
-Join de `silver.transactions` com `silver.customers`. Inclui todos os campos de transação mais `customer_name` e `customer_email`, evitando que analistas precisem fazer joins manualmente a cada query.
+Join das tabelas de transactions e customers da silver, evitando que analistas precisem fazer joins manualmente a cada query.
 
 | Campo | Tipo | Descrição |
 |---|---|---|
@@ -98,7 +94,7 @@ Join de `silver.transactions` com `silver.customers`. Inclui todos os campos de 
 
 ### Procedures
 
-- `gold.proc_transactions()` — faz join de `silver.transactions` com `silver.customers` e faz MERGE em `gold.transactions`
+- `gold.proc_transactions()`: faz join da transactions com a customers (ambas silver) e faz MERGE na transactions (gold).
 
 ### Views
 
@@ -110,27 +106,21 @@ Join de `silver.transactions` com `silver.customers`. Inclui todos os campos de 
 
 ---
 
-## Decisões técnicas
+## 🧠 Decisões técnicas
 
 ### Região do dataset
-- **Lab e Produção:** `us-central1` — mesma região do bucket no Cloud Storage. Obrigatório: o Pub/Sub não consegue entregar mensagens para uma tabela BigQuery em região diferente do tópico.
+- `us-central1`: mesma região do bucket no Cloud Storage.
+- Um dataset para todos os dados brutos (raw), simplicidade de gestão.
 
 ### Billing type (logical bytes)
-- **Lab e Produção:** `logical` — cobrança baseada nos bytes lógicos armazenados, sem considerar compressão interna do BQ. Mais previsível para monitoramento de custos; o modelo `physical` pode ser vantajoso em tabelas muito grandes com alta taxa de compressão, mas exige análise prévia do padrão de dados.
+- `logical`: cobrança baseada nos bytes lógicos armazenados, sem considerar compressão interna do BQ.
 
 ### Tabela `landing_events`
-Todas as entidades (`transactions`, `customers`) são publicadas no mesmo tópico e caem na mesma tabela raw. A separação por entidade ocorre nas procedures silver via filtro no campo `attributes.entity`.
+- Todas as entidades (`transactions`, `customers`) são publicadas no mesmo tópico e caem na mesma tabela raw.
+- Partitionada pelo `publish_time` (dia). Alinhado com o padrão de ingestão diária do pipeline.
 
 ### Tipo `data` como JSON
-O Pub/Sub envia o payload como string. Usar o tipo `JSON` no BQ permite navegar os campos diretamente com `JSON_VALUE(data.field)` sem precisar de `PARSE_JSON` em cada query.
-
-### Particionamento por `publish_time` (DAY) — `landing_events`
-Alinhado com o padrão de ingestão diária do pipeline. Queries que filtram por data leem apenas a partição relevante, evitando full scan em uma tabela que cresce indefinidamente.
+- O Pub/Sub envia o payload como string. Usar o tipo `JSON` no BQ (maior flexibilidade).
 
 ### Expiração de partição
-- **Lab:** Não configurada
-- **Produção:** Configurar expiração após alguns anos (ex: 5 anos) para conformidade com políticas de retenção de dados financeiros e evitar crescimento indefinido de custo de armazenamento.
-
-### Dataset único `raw`
-- **Lab:** Um dataset para todos os dados brutos — simplicidade de gestão
-- **Produção:** Considerar separação por domínio (`raw_transactions`, `raw_customers`) para controle de acesso granular via IAM, permitindo que times diferentes acessem apenas os dados de sua responsabilidade
+- Não configurada, mas poderia existir para evitarmos muitos dados após longo períodos (mais de 10 anos, por exemplo).

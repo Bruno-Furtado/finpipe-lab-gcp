@@ -1,9 +1,7 @@
-# Function
-
 Cloud Run Function que processa arquivos CSV enviados ao bucket, publica os dados no Pub/Sub e aciona o Cloud Workflows.
 
 
-## O que faz
+## 🔍 O que faz
 
 1. Recebe evento do EventArc ao detectar novo arquivo no bucket (`google.cloud.storage.object.v1.finalized`)
 2. Filtra apenas arquivos `.csv`, outros tipos são ignorados sem erro
@@ -13,13 +11,13 @@ Cloud Run Function que processa arquivos CSV enviados ao bucket, publica os dado
 6. Aciona o Cloud Workflows passando `audit_id` e `entity` como parâmetros
 
 
-## Como executar
+## 🚀 Implantação
 
 ```bash
 ./function/deploy.sh
 ```
 
-## Desenvolvimento local
+## 💻 Desenvolvimento local
 
 Instalar dependências:
 
@@ -29,7 +27,7 @@ source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 ```
 
-Rodar localmente com o functions-framework:
+Rodar localmente:
 
 ```bash
 PROJECT_ID=finpipe-lab TOPIC_ID=finpipe-landing-events WORKFLOW_ID=finpipe-pipeline LOCATION=us-central1 functions-framework --target=process --signature-type=cloudevent --debug
@@ -60,20 +58,20 @@ ruff format .
 
 ---
 
-## Decisões técnicas
+## 🧠 Decisões técnicas
 
 ### Variáveis de ambiente
-`PROJECT_ID`, `TOPIC_ID` e `WORKFLOW_ID` são injetados via `--set-env-vars` no deploy — sem valores hardcoded no código. Facilita replicação do pipeline em outros projetos ou ambientes sem alterar o código-fonte.
+- `PROJECT_ID`, `TOPIC_ID` e `WORKFLOW_ID` são injetados via `--set-env-vars` no deploy (sem valores hardcoded no código).
 
 ### Uma mensagem por arquivo
-Todos os rows do CSV são publicados como uma única mensagem JSON. Simplifica o rastreamento por arquivo (um `audit_id` por arquivo, não por linha) e reduz o overhead de múltiplas chamadas ao Pub/Sub.
+- Todos os rows do CSV são publicados como uma única mensagem JSON.
 
 ### Validação de entidade
-Arquivos em paths não mapeados são ignorados com log de warning, a function não retorna erro, evitando que o EventArc tente reprocessar o evento automaticamente. Erros de validação de conteúdo (CSV malformado, colunas ausentes) retornam erro e disparam alerta via Cloud Monitoring.
+- Arquivos em paths não mapeados são ignorados com log de warning
+- Erros de validação de conteúdo (CSV malformado, colunas ausentes) retornam erro e disparam alerta via Cloud Monitoring.
 
 ### Trigger via EventArc
-O evento `finalized` é disparado apenas quando o upload é concluído com sucesso, garantindo que o arquivo esteja completamente disponível no GCS antes da leitura.
+- O evento é disparado apenas quando o upload é concluído com sucesso, garantindo que o arquivo esteja disponível antes da leitura.
 
 ### Instâncias
-`min=0`, `max=1` — sem custo em idle, processamento sequencial adequado para ingestão de poucos arquivos por dia
-
+- `min=0`, `max=1`: sem custo em idle, processamento sequencial adequado para ingestão de poucos arquivos por dia
