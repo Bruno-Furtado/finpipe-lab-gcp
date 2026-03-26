@@ -1,5 +1,7 @@
 <div align="center">
 
+  ![cover](./docs/cover.webp)
+
   ![Cloud Storage](https://img.shields.io/badge/data-Cloud_Storage-3B82F6?style=flat)
   ![BigQuery](https://img.shields.io/badge/data-BigQuery-3B82F6?style=flat)
   ![Pub/Sub](https://img.shields.io/badge/events-Pub%2FSub-14B8A6?style=flat)
@@ -29,18 +31,13 @@ Pipeline orientado a eventos para ingestão, transformação e análise de trans
 6. **Silver** limpa, normaliza e deduplica os registros via MERGE incremental particionado
 7. **Gold** enriquece os dados com um join de transações ✕ clientes, particionado e clusterizado para performance de consultas
 
-Do depósito do arquivo até os dados disponíveis na camada gold, todo o fluxo é concluído em questão de segundos.
-
-> 🧠 [Por que essas tecnologias?](./docs/por-que-essas-tecnologias.md)
-> 🔍 [Observações sobre os dados](./docs/observacoes-sobre-os-dados.md)
+> Mais detalhes sobre [as escolhas de tecnologia](./docs/por-que-essas-tecnologias.md) e [observações sobre os dados](./docs/observacoes-sobre-os-dados.md).
 
 
 ## ⚙️ Pré-requisitos
 
 - Projeto GCP com faturamento habilitado
 - [`gcloud`](https://cloud.google.com/sdk/docs/install) instalado e autenticado
-
-> O Google recomenda conceder o **menor privilégio** necessário, preferindo papéis granulares. Neste lab, papéis mais amplos foram utilizados por simplicidade.
 
 
 ## 🚀 Implantação
@@ -67,7 +64,7 @@ gsutil cp storage/files/normalized/customers.csv gs://finpipe-landing/entity=cus
 gsutil cp storage/files/normalized/transactions.csv gs://finpipe-landing/entity=transactions/year=2026/month=03/day=25/transactions.csv
 ```
 
-Cada upload finalizado dispara automaticamente o EventArc, que invoca a Cloud Run Function e inicia o fluxo completo de ingestão e transformação.
+Cada upload finalizado dispara automaticamente o EventArc, que invoca a Cloud Run Function e inicia o fluxo.
 
 
 ## 📄 Licença
