@@ -27,9 +27,9 @@ Pipeline orientado a eventos para ingestão, transformação e análise de trans
 2. **EventArc** detecta o evento de finalização do objeto e invoca a Cloud Run Function
 3. **Cloud Run Function** valida o arquivo, gera um audit id único e publica os registros no Pub/Sub
 4. **Pub/Sub** persiste o payload JSON na tabela da camada raw via subscription do BigQuery
-5. **Cloud Workflows** aguarda a escrita no raw ser concluída, depois executa o silver em paralelo e o gold sequencialmente
+5. **Cloud Workflows** aguarda a escrita no raw ser concluída, depois executa o silver e gold sequencialmente
 6. **Silver** limpa, normaliza e deduplica os registros via MERGE incremental particionado
-7. **Gold** enriquece os dados com um join de transações ✕ clientes, particionado e clusterizado para performance de consultas
+7. **Gold** enriquece os dados com um join de transações ✕ clientes, particionado e clusterizado para otimização
 
 > Mais detalhes sobre [as escolhas de tecnologia](./docs/por-que-essas-tecnologias.md) e [observações sobre os dados](./docs/observacoes-sobre-os-dados.md).
 
