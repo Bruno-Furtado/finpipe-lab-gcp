@@ -1,0 +1,11 @@
+# Diretórios padrão do Python
+__pycache__/
+
+# Ambiente virtual
+.venv/
+
+# Arquivos do Claude
+.claude/
+
+# Arquivos do sistema operacional
+.DS_Store

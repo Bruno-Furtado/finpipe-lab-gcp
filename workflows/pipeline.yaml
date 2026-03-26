@@ -1,0 +1,87 @@
+main:
+  params: [args]
+  steps:
+    - init:
+        assign:
+          - project_id: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          - location: ${sys.get_env("GOOGLE_CLOUD_LOCATION")}
+          - audit_id: ${args.audit_id}
+          - entity: ${args.entity}
+
+    - initial_wait:
+        call: sys.sleep
+        args:
+          seconds: 10
+
+    - run_silver_parallel:
+        parallel:
+          branches:
+            - silver_transactions:
+                steps:
+                  - run_silver_transactions:
+                      call: run_bq_job
+                      args:
+                        sql: CALL silver.proc_transactions()
+                        project_id: ${project_id}
+                        location: ${location}
+
+            - silver_customers:
+                steps:
+                  - run_silver_cust:
+                      call: run_bq_job
+                      args:
+                        sql: CALL silver.proc_customers()
+                        project_id: ${project_id}
+                        location: ${location}
+
+    - run_gold:
+        call: run_bq_job
+        args:
+          sql: CALL gold.proc_transactions()
+          project_id: ${project_id}
+          location: ${location}
+
+
+run_bq_job:
+  params: [sql, project_id, location]
+  steps:
+    - submit:
+        call: googleapis.bigquery.v2.jobs.insert
+        args:
+          projectId: ${project_id}
+          body:
+            jobReference:
+              location: ${location}
+            configuration:
+              query:
+                query: ${sql}
+                useLegacySql: false
+        result: job
+
+    - check_state:
+        switch:
+          - condition: ${job.status.state == "DONE"}
+            next: check_errors
+        next: wait
+
+    - wait:
+        call: sys.sleep
+        args:
+          seconds: 5
+
+    - poll:
+        call: googleapis.bigquery.v2.jobs.get
+        args:
+          projectId: ${project_id}
+          jobId: ${job.jobReference.jobId}
+          location: ${location}
+        result: job
+        next: check_state
+
+    - check_errors:
+        switch:
+          - condition: ${"errorResult" in job.status}
+            raise: ${job.status.errorResult}
+
+    - done:
+        return: ${job.statistics}

@@ -1,0 +1,21 @@
+# Ignorar ambientes virtuais
+.venv/
+
+# Ignorar cache Python
+__pycache__/
+*.py[cod]
+
+# Ignorar arquivos de IDE
+.vscode/
+.settings.json
+
+# Ignorar arquivos de sistema
+.DS_Store
+
+# Ignorar arquivos do repositório
+.gcloudignore
+.gitignore
+deploy.sh
+README.md
+requirements-dev.txt
+ruff.toml

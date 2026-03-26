@@ -1,0 +1,13 @@
+src = ["."]
+line-length = 150
+lint.select = ["ANN", "E", "F", "I", "B", "PLR", "UP", "SIM"]  # Grupos de regras úteis
+lint.ignore = ["B008", "E402"]  # Permite importações após outros statements (ex: variáveis de ambiente)
+
+fix = true
+target-version = "py314"
+
+[format]
+quote-style = "single"
+indent-style = "tab"
+skip-magic-trailing-comma = false
+line-ending = "lf"

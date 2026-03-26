@@ -1,0 +1,7 @@
+{
+  "files.exclude": {
+    "**/.venv": true,
+    "**/.ruff_cache": true,
+    "**/__pycache__": true
+  }
+}
