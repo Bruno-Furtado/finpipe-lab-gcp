@@ -34,47 +34,12 @@ Do depósito do arquivo até os dados disponíveis na camada gold, todo o fluxo 
 
 ## 🧠 Por que essas tecnologias?
 
-### Cloud Storage + Particionamento Hive
-O Cloud Storage é o serviço nativo do GCP para armazenamento de objetos e blobs. A estrutura de particionamento Hive (`entity=transactions/`, `entity=customers/`) é um padrão de mercado e, com ele, é possivel buscar arquivos de maneira eficiente.
-
-### EventArc
-Elimina a necessidade de polling ou agendadores: assim que um arquivo é finalizado no GCS, o evento é detectado e a Cloud Run Function é invocada automaticamente. O gatilho é limitado apenas às pastas `entity=*/`, evitando invocações indesejadas. Para o volume esperado (um arquivos por dia), a invocação direta é ok. Já para volumes maiores e paralelismo, os eventos poderiam ser acionamos por um aquivo flag (sentinel file), sinalizando que um job terminou.
-
-### Cloud Run Function
-Responsabilidade única: receber o evento, validar o arquivo, publicar no Pub/Sub e acionar o Workflow. Sem infraestrutura para gerenciar, escala automaticamente de zero a 50 instâncias sob demanda. Em caso de falha (arquivo inválido, erro de publicação), alertas são disparados via Cloud Monitoring sem nenhuma configuração adicional de código.
-
-### Pub/Sub
-Desacopla a ingestão do processamento. A subscription do BigQuery persiste automaticamente cada mensagem JSON em `raw.landing_events`, junto com metadados como `message_id` e `publish_time`. Todos os atributos (incluindo o `audit_id` gerado pela Function) são armazenados na coluna `attributes`, permitindo rastreabilidade de ponta a ponta do Log Explorer até a camada gold. Uma Dead Letter Queue (DLQ) retém mensagens não entregues por até 7 dias, com alertas automáticos.
-
-### Cloud Monitoring + Log Explorer
-O Cloud Monitoring centraliza os alertas: erros da Function e mensagens acumuladas na DLQ disparam notificações por e-mail. O Log Explorer permite rastrear o `audit_id` em todas as etapas do pipeline, dos logs estruturados da Function aos campos `_metadata` nas tabelas Silver e Gold.
-
-### Cloud Workflows
-Orquestra as transformações. Aguarda alguns segundos após o evento antes de executar, garantindo que a escrita no raw esteja concluída. Executa os procedimentos silver em paralelo (transações e clientes são independentes) e, após ambos finalizarem, executa o procedimento gold sequencialmente. Polling nativo em intervalos de 5 segundos monitora cada job do BigQuery até sua conclusão.
-
-### BigQuery — raw / silver / gold
-Três camadas com responsabilidades distintas:
-- **raw** — dados brutos exatamente como recebidos do Pub/Sub, imutáveis. Particionados por data para evitar full scan.
-- **silver** — dados limpos, normalizados e deduplicados. O MERGE incremental garante idempotência: reprocessar o mesmo arquivo não gera duplicatas.
-- **gold** — tabela pronta para analytics, enriquecida com um join entre transações e clientes. Particionada por data e clusterizada para otimizar a performance das consultas.
+Veja [docs/por-que-essas-tecnologias.md](./docs/por-que-essas-tecnologias.md).
 
 
 ## 🔍 Observações sobre os dados
 
-**Consolidação dos arquivos de transações**
-Os dados de transações foram fornecidos em dois arquivos separados com colunas complementares: o primeiro continha os campos financeiros principais (valor, status, data) e o segundo os campos de composição (tipo, quantidade, preço). Como o formato oficialmente esperado pelo pipeline é um único arquivo consolidado com todas as colunas, os dois arquivos foram unidos antes da ingestão e se espera que assim sejam enviados futuramente.
-
-**Envio dos arquivos ao bucket**
-O pipeline parte do princípio de que um serviço (interno ou externo) é responsável por depositar os arquivos no bucket. Esse serviço poderia ser, por exemplo, uma Cloud Function. Essa mesma Function poderia ainda atuar como controladora dos eventos: em cenários com múltiplos arquivos por job, ela seria responsável por aguardar a chegada de todos os arquivos esperados e, ao confirmar a conclusão, depositar um arquivo sentinela (sentinel file) no bucket para sinalizar ao pipeline que o processamento pode ser iniciado.
-
-**Normalização do `customer_id`**
-Foi identificada uma inconsistência no formato do id de clientes: o mesmo cliente aparecia como `C01` em um arquivo e `C1` em outro. Para garantir a integridade do JOIN entre transações e clientes na camada gold, foi criada uma função de normalização (`silver.func_normalize_customer_id`) que padroniza o formato removendo zeros à esquerda após o prefixo.
-
-**Atualizações de clientes**
-O pipeline já suporta o recebimento de arquivos de clientes (`entity=customers/`) contendo novos registros ou atualizações de registros existentes. O MERGE incremental na camada silver garante que os registros atualizados sobrescrevam as versões anteriores sem duplicação.
-
-**Extensibilidade para novos campos**
-Se o CSV começar a incluir novas colunas, o pipeline absorve a mudança de forma transparente: os novos campos serão publicados no Pub/Sub e automaticamente persistidos em `raw.landing_events` como parte do payload JSON. Os dados já estarão armazenados no raw; para utilizá-los nas camadas silver e gold, basta ajustar os procedimentos correspondentes.
+Veja [docs/observacoes-sobre-os-dados.md](./docs/observacoes-sobre-os-dados.md).
 
 
 ## ⚙️ Pré-requisitos
