@@ -57,7 +57,7 @@ Edite o [`config.sh`](./config.sh) com o ID do seu projeto e a região, depois e
 
 ## 🧪 Testes
 
-Com a infraestrutura implantada, o pipeline pode ser acionado depositando os arquivos diretamente no bucket via `gsutil`:
+Com a infraestrutura implantada, o pipeline pode ser acionado enviando os arquivos para o bucket:
 
 ```bash
 gsutil cp storage/files/normalized/customers.csv gs://finpipe-landing/entity=customers/year=2026/month=03/day=25/customers.csv
