@@ -31,15 +31,8 @@ Pipeline orientado a eventos para ingestão, transformação e análise de trans
 
 Do depósito do arquivo até os dados disponíveis na camada gold, todo o fluxo é concluído em questão de segundos.
 
-
-## 🧠 Por que essas tecnologias?
-
-Veja [docs/por-que-essas-tecnologias.md](./docs/por-que-essas-tecnologias.md).
-
-
-## 🔍 Observações sobre os dados
-
-Veja [docs/observacoes-sobre-os-dados.md](./docs/observacoes-sobre-os-dados.md).
+> 🧠 [Por que essas tecnologias?](./docs/por-que-essas-tecnologias.md)
+> 🔍 [Observações sobre os dados](./docs/observacoes-sobre-os-dados.md)
 
 
 ## ⚙️ Pré-requisitos
