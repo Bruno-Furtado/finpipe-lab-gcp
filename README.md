@@ -97,7 +97,7 @@ Os valores abaixo são **simulações** baseadas em dois cenários de volume dis
 | BigQuery (processamento) | ~$78,00 | ~$78,00 | ~$936,00 |
 | **Total estimado** | **~$408,35** | **~$4.068,35** | **~$27.040,20** |
 
-> O custo do Storage é alto pois não estamos considerando a mudança para clas Archive. Veja a [simulação detalhada](./docs/simulacao-de-custos.md).
+> O custo do Storage é alto pois não estamos considerando a class Archive. Veja a [simulação detalhada](./docs/simulacao-de-custos.md).
 
 
 ## 📄 Licença
