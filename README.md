@@ -18,7 +18,7 @@
 
 <br/>
 
-Pipeline orientado a eventos para ingestão, transformação e análise de transações financeiras no Google Cloud Platform.
+Pipeline orientado a eventos para ingestão, transformação e análise de transações financeiras no GCP.
 
 
 ## 🏗️ Arquitetura
